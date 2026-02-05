@@ -1,0 +1,200 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+//////////////////// ENUMS ////////////////////
+
+enum Role {
+  ADMIN
+  INSTRUCTOR
+  STUDENT
+}
+
+enum QuestionType {
+  MCQ
+  MSQ
+  TRUE_FALSE
+  FILL_BLANK
+  MATCH
+  SHORT
+  CODING
+}
+
+enum TestType {
+  PRACTICE
+  EXAM
+}
+
+//////////////////// USERS ////////////////////
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+
+  memberships  BatchMember[]
+  createdTests Test[]
+  attempts     TestAttempt[]
+}
+
+//////////////////// BATCH / CLASS ////////////////////
+
+model Batch {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  members BatchMember[]
+  tests   Test[]
+}
+
+model BatchMember {
+  id      String @id @default(uuid())
+  userId  String
+  batchId String
+
+  user  User  @relation(fields: [userId], references: [id])
+  batch Batch @relation(fields: [batchId], references: [id])
+
+  @@unique([userId, batchId])
+}
+
+//////////////////// TEST ////////////////////
+
+model Test {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  type        TestType
+  duration    Int? // minutes
+  createdAt   DateTime @default(now())
+
+  creatorId String
+  batchId   String?
+
+  creator User  @relation(fields: [creatorId], references: [id])
+  batch   Batch? @relation(fields: [batchId], references: [id])
+
+  sections  Section[]
+  questions Question[]
+  attempts  TestAttempt[]
+}
+
+//////////////////// SECTIONS ////////////////////
+
+model Section {
+  id     String @id @default(uuid())
+  name   String
+  testId String
+
+  test      Test       @relation(fields: [testId], references: [id])
+  questions Question[]
+}
+
+//////////////////// QUESTIONS ////////////////////
+
+model Question {
+  id          String       @id @default(uuid())
+  text        String
+  type        QuestionType
+  difficulty  String
+  marks       Float
+  sectionId   String?
+  testId      String
+
+  test      Test                @relation(fields: [testId], references: [id])
+  section   Section?            @relation(fields: [sectionId], references: [id])
+  options   Option[]
+  coding    CodingQuestion?
+  responses QuestionResponse[]
+}
+
+model Option {
+  id         String  @id @default(uuid())
+  text       String
+  isCorrect  Boolean
+  questionId String
+
+  question Question @relation(fields: [questionId], references: [id])
+}
+
+//////////////////// CODING ////////////////////
+
+model CodingQuestion {
+  id          String @id @default(uuid())
+  questionId  String @unique
+  boilerplate String?
+  language    String
+
+  question    Question         @relation(fields: [questionId], references: [id])
+  testCases   TestCase[]
+  submissions CodeSubmission[]
+}
+
+model TestCase {
+  id              String  @id @default(uuid())
+  codingQuestionId String
+  input           String
+  expectedOutput  String
+  isHidden        Boolean @default(false)
+
+  codingQuestion CodingQuestion @relation(fields: [codingQuestionId], references: [id])
+}
+
+//////////////////// ATTEMPTS ////////////////////
+
+model TestAttempt {
+  id        String   @id @default(uuid())
+  userId    String
+  testId    String
+  score     Float?
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+  test Test @relation(fields: [testId], references: [id])
+
+  responses QuestionResponse[]
+  submissions CodeSubmission[]
+}
+
+model QuestionResponse {
+  id          String @id @default(uuid())
+  attemptId   String
+  questionId  String
+  answer      String?
+  isCorrect   Boolean?
+  marksAwarded Float?
+
+  attempt  TestAttempt @relation(fields: [attemptId], references: [id])
+  question Question    @relation(fields: [questionId], references: [id])
+}
+
+//////////////////// CODE SUBMISSION ////////////////////
+
+model CodeSubmission {
+  id              String   @id @default(uuid())
+  attemptId       String
+  codingQuestionId String
+  language        String
+  code            String
+  score           Float
+  createdAt       DateTime @default(now())
+
+  attempt TestAttempt     @relation(fields: [attemptId], references: [id])
+  coding  CodingQuestion  @relation(fields: [codingQuestionId], references: [id])
+}
