@@ -16,6 +16,7 @@ import {
   Plus,
   Users,
 } from "lucide-react";
+import Link from "next/link";
 import React from "react";
 
 function DashboardPage() {
@@ -45,7 +46,7 @@ function DashboardPage() {
             {/* CREATE NEW QUIZ BUTTON */}
             <div className="bg-primary-button text-white px-4 py-2 rounded-lg text-sm shadow-md shadow-primary-button/30 hover:bg-primary-button/90 active:scale-95 transition-transform flex flex-row items-center gap-2">
               <Plus size={20} />
-              <button>Create New Quiz</button>
+              <Link href={"/quiz/create"}>Create New Quiz</Link>
             </div>
           </div>
         </div>

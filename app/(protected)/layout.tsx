@@ -1,11 +1,12 @@
 import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import React from "react";
 
 async function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, userId } = await auth();
+  const { userId } = await auth();
 
-  if (!isAuthenticated) {
-    return <div>Not authenticated!</div>;
+  if (!userId) {
+    redirect("/auth/sign-in");
   }
   return <div className="min-h-screen bg-background">{children}</div>;
 }
