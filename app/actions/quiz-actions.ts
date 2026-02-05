@@ -252,7 +252,11 @@ export async function deleteQuiz(testId: string) {
  * Server Action to create a new test attempt
  * This runs on the server and has access to the database
  */
-export async function startTestAttempt(testId: string) {
+export async function startTestAttempt(
+  testId: string,
+): Promise<
+  { success: true; attemptId: string } | { success: false; error: string }
+> {
   // Get the authenticated user
   const { userId } = await auth();
 
@@ -300,6 +304,96 @@ export async function startTestAttempt(testId: string) {
     return {
       success: false,
       error: "Failed to start test attempt",
+    };
+  }
+}
+
+export async function getTestAttemptResults(attemptId: string) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    const attempt = await prisma.testAttempt.findFirst({
+      where: {
+        id: attemptId,
+        user: {
+          id: userId,
+        },
+      },
+      include: {
+        test: {
+          select: {
+            title: true,
+            duration: true,
+            type: true,
+          },
+        },
+        responses: {
+          include: {
+            question: {
+              select: {
+                text: true,
+                type: true,
+                marks: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!attempt) {
+      return {
+        success: false,
+        error: "Attempt not found",
+      };
+    }
+
+    // Calculate class stats
+    const allAttempts = await prisma.testAttempt.findMany({
+      where: {
+        testId: attempt.testId,
+        endedAt: { not: null },
+      },
+      select: {
+        score: true,
+        userId: true,
+      },
+    });
+
+    const scores = allAttempts.map((a) => a.score || 0);
+    const classAverage =
+      scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+
+    const sortedScores = [...scores].sort((a, b) => b - a);
+    const rank = sortedScores.findIndex((s) => s === (attempt.score || 0)) + 1;
+
+    return {
+      success: true,
+      attempt: {
+        id: attempt.id,
+        score: attempt.score ?? 0,
+        startedAt: attempt.startedAt.toISOString(),
+        endedAt: attempt.endedAt!.toISOString(),
+        test: {
+          title: attempt.test.title,
+          type: attempt.test.type,
+          duration: attempt.test.duration ?? 0, // ✅ normalize null
+        },
+        responses: attempt.responses,
+      },
+      classAverage,
+      rank,
+      totalStudents: new Set(allAttempts.map((a) => a.userId)).size,
+    };
+  } catch (error) {
+    console.error("Error fetching results:", error);
+    return {
+      success: false,
+      error: "Failed to fetch results",
     };
   }
 }

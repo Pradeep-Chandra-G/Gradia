@@ -16,7 +16,7 @@ export async function getDashboardStats() {
   try {
     // Get user from database
     const user = await prisma.user.findUnique({
-      where: { email: userId },
+      where: { id: userId },
     });
 
     if (!user) {
@@ -29,9 +29,8 @@ export async function getDashboardStats() {
     // Get stats based on user role
     if (user.role === "INSTRUCTOR" || user.role === "ADMIN") {
       // Instructor/Admin stats
-      const [activeTests, totalCandidates, avgCompletionRate] =
+      const [activeTests, uniqueCandidates, avgCompletionRate] =
         await Promise.all([
-          // Count active (live) tests created by this instructor
           prisma.test.count({
             where: {
               creatorId: user.id,
@@ -39,17 +38,15 @@ export async function getDashboardStats() {
             },
           }),
 
-          // Count unique students who attempted tests
-          prisma.testAttempt.count({
+          prisma.testAttempt.groupBy({
+            by: ["userId"],
             where: {
               test: {
                 creatorId: user.id,
               },
             },
-            distinct: ["userId"],
           }),
 
-          // Calculate average completion rate
           prisma.testAttempt.aggregate({
             where: {
               test: {
@@ -69,7 +66,7 @@ export async function getDashboardStats() {
         success: true,
         stats: {
           activeAssignments: activeTests,
-          totalCandidates: totalCandidates,
+          totalCandidates: uniqueCandidates.length,
           avgCompletionRate: avgCompletionRate._avg.score || 0,
         },
       };
@@ -134,7 +131,7 @@ export async function getRecentAssessments() {
 
   try {
     const user = await prisma.user.findUnique({
-      where: { email: userId },
+      where: { id: userId },
     });
 
     if (!user) {
@@ -242,7 +239,7 @@ export async function getUserProfile() {
 
   try {
     const user = await prisma.user.findUnique({
-      where: { email: userId },
+      where: { id: userId },
       include: {
         memberships: {
           include: {

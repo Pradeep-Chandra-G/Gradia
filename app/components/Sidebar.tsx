@@ -41,43 +41,34 @@ function Sidebar() {
           <ul className="space-y-2 select-none ">
             <li>
               <Link
-                href={"/dashboard"}
-                className="flex flex-row items-center gap-2 bg-primary-button rounded-md p-2 text-md font-bold active:bg-primary-button/90"
+                href="/dashboard"
+                className="flex flex-row items-center gap-2 bg-primary-button rounded-md p-2 text-md font-bold"
               >
                 <LayoutDashboard size={24} /> Dashboard
               </Link>
             </li>
             <li>
               <Link
-                href={"/quiz"}
+                href="/quiz"
                 className="flex flex-row items-center gap-2 p-2 text-md font-semibold active:bg-white/5 rounded-md"
               >
-                <FileText size={24} /> Quiz
-              </Link>
-            </li>
-
-            <li>
-              <Link
-                href={"/notes"}
-                className="flex flex-row items-center gap-2 p-2 text-md font-semibold active:bg-white/5 rounded-md"
-              >
-                <Database size={22} /> Notes
+                <FileText size={24} /> Quizzes
               </Link>
             </li>
             <li>
               <Link
-                href={"/results"}
+                href="/batches"
                 className="flex flex-row items-center gap-2 p-2 text-md font-semibold active:bg-white/5 rounded-md"
               >
-                <ChartNoAxesColumn size={22} /> Results
+                <Users size={22} /> Batches
               </Link>
             </li>
             <li>
               <Link
-                href={"/users"}
+                href="/results"
                 className="flex flex-row items-center gap-2 p-2 text-md font-semibold active:bg-white/5 rounded-md"
               >
-                <Users size={22} /> Users
+                <ChartNoAxesColumn size={22} /> My Results
               </Link>
             </li>
           </ul>
