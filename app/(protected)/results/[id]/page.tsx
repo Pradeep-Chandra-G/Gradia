@@ -1,22 +1,26 @@
 import { getTestAttemptResults } from "@/app/actions/quiz-actions";
 import ResultsClient from "@/app/components/results/ResultsClient";
 
-export default async function Page({
-  params,
-}: {
-  params: { attemptId: string };
-}) {
-  const data = await getTestAttemptResults(params.attemptId);
+export default async function Page({ params }: { params: { id: string } }) {
+  const data = await getTestAttemptResults(params.id); // Changed from params.attemptId
 
-  if (!data.attempt?.id) {
-    throw new Error("Attempt not found");
+  if (!data.success || !data.attempt?.id) {
+    return (
+      <div className="min-h-screen bg-background text-white flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-2">Results Not Found</h1>
+          <p className="text-gray-400">
+            The attempt you're looking for doesn't exist.
+          </p>
+        </div>
+      </div>
+    );
   }
 
-  // 🔹 FIX 2 happens HERE
   const normalizedData = {
     ...data,
     attempt: {
-      id: data.attempt.id, // ✅ guarantee presence
+      id: data.attempt.id,
       score: data.attempt.score,
       startedAt: data.attempt.startedAt,
       endedAt: data.attempt.endedAt,

@@ -239,8 +239,8 @@ export default function QuizTakingClient({
       const result = await endTestAttempt(attemptId);
 
       if (result.success) {
-        alert(`Quiz submitted successfully! Your score: ${result.score}`);
-        router.push(`/results/${attemptId}`);
+        // Navigate to results page with correct route
+        router.push(`/results/${attemptId}`); // Changed from /results/${attemptId} if it was different
       } else {
         alert("Failed to submit quiz: " + result.error);
       }

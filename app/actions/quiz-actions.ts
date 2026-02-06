@@ -257,7 +257,6 @@ export async function startTestAttempt(
 ): Promise<
   { success: true; attemptId: string } | { success: false; error: string }
 > {
-  // Get the authenticated user
   const { userId } = await auth();
 
   if (!userId) {
@@ -265,19 +264,40 @@ export async function startTestAttempt(
   }
 
   try {
-    // Check if user exists in database, if not create them
+    // Check if user exists in database using Clerk ID
     let user = await prisma.user.findUnique({
-      where: { email: userId }, // Using Clerk userId as email for now
+      where: { id: userId }, // Use id instead of email
     });
 
     if (!user) {
-      // Create user in database if they don't exist
-      // You'll need to get actual email from Clerk
+      // Get user info from Clerk
+      const { currentUser: clerkUser } = await import("@clerk/nextjs/server");
+      const clerk = await clerkUser();
+
+      if (!clerk) {
+        return {
+          success: false,
+          error: "User not found",
+        };
+      }
+
+      const email = clerk.emailAddresses[0]?.emailAddress;
+
+      if (!email) {
+        return {
+          success: false,
+          error: "No email found for user",
+        };
+      }
+
+      // Create user in database
       user = await prisma.user.create({
         data: {
-          email: userId,
-          name: "User", // Get from Clerk user object
-          password: "", // Not needed with Clerk
+          id: userId,
+          email: email,
+          name:
+            `${clerk.firstName || ""} ${clerk.lastName || ""}`.trim() || "User",
+          password: "",
           role: "STUDENT",
         },
       });
@@ -292,7 +312,6 @@ export async function startTestAttempt(
       },
     });
 
-    // Revalidate the dashboard to show updated data
     revalidatePath("/dashboard");
 
     return {

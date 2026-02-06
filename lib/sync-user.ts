@@ -25,39 +25,38 @@ export async function ensureUserInDatabase() {
   }
 
   // Check if user exists in database
-  let dbUser = await prisma.user.findUnique({
-    where: { id: clerkUser.id },
-  });
+  const email =
+    clerkUser.emailAddresses.find(
+      (e) => e.id === clerkUser.primaryEmailAddressId,
+    )?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress;
 
-  // If user doesn't exist, create them
-  if (!dbUser) {
-    const email =
-      clerkUser.emailAddresses.find(
-        (e) => e.id === clerkUser.primaryEmailAddressId,
-      )?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress;
-
-    if (!email) {
-      throw new Error("User has no email address");
-    }
-
-    // Get role from Clerk metadata (default to STUDENT)
-    const role = (clerkUser.publicMetadata?.role as Role) || "STUDENT";
-
-    dbUser = await prisma.user.create({
-      data: {
-        id: clerkUser.id,
-        email: email,
-        name:
-          `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() ||
-          "User",
-        password: "", // Not used with Clerk
-        role: role,
-      },
-    });
-
-    console.log(`✅ Created user in database: ${email}`);
+  if (!email) {
+    throw new Error("User has no email address");
   }
 
+  const role = (clerkUser.publicMetadata?.role as Role) || "STUDENT";
+
+  const dbUser = await prisma.user.upsert({
+    where: { id: clerkUser.id },
+    update: {
+      email,
+      name:
+        `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() ||
+        "User",
+      role,
+    },
+    create: {
+      id: clerkUser.id,
+      email,
+      name:
+        `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() ||
+        "User",
+      password: "",
+      role,
+    },
+  });
+
+  console.log(`✅ Created user in database: ${email}`);
   return dbUser;
 }
 
