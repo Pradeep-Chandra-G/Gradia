@@ -5,7 +5,8 @@
   "author": "Pradeep Chandra Gajendra",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "prisma:generate": "prisma generate",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint"
   },

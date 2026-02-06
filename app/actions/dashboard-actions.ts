@@ -2,6 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import type { AssessmentStatus } from "@/lib/types";
 
 /**
  * Server Action to get dashboard statistics
@@ -202,7 +203,9 @@ export async function getRecentAssessments() {
       id: test.id,
       name: test.title,
       subtitle: test.description || undefined,
-      status: test.attempts.length > 0 ? "live" : ("published" as const),
+      status: (test.attempts.length > 0
+        ? "live"
+        : "published") as AssessmentStatus,
       candidates: {
         current: test.attempts.length,
         total: test._count.attempts,
